@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HTML Analyzer</title>
+</head>
+<body>
+  <h1>HTML Analyzer</h1>
+  <p>Select an HTML file to analyze:</p>
+  <input type="file" id="file-input" accept=".html">
+  <button id="analyze-button">Analyze</button>
+  <div id="result"></div>
+
+  <!-- This is the JavaScript code that will run when the button is clicked -->
+  <script>
+
+    // This function will read the contents of the selected file and return it as a string
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        let reader = new FileReader();
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+        reader.onerror = () => {
+          reject(reader.error);
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    // This function will parse the HTML string and return an object with the unique elements, tags, attributes, counts and values
+    function analyzeHTML(html) {
+      let parser = new DOMParser();
+      let doc = parser.parseFromString(html, "text/html");
+      let allElements = doc.querySelectorAll("*");
+      let result = {
+        elements: [],
+        tags: [],
+        attributes: [],
+        counts: {},
+        values: {}
+      };
+      for (let i = 0; i < allElements.length; i++) {
+        let element = allElements[i];
+        let tagName = element.tagName;
+        let attrNames = [];
+        let attrValues = [];
+        for (let j = 0; j < element.attributes.length; j++) {
+          let attr = element.attributes[j];
+          attrNames.push(attr.name);
+          attrValues.push(attr.value);
+        }
+        if (!result.elements.includes(element)) {
+          result.elements.push(element);
+        }
+        if (!result.tags.includes(tagName)) {
+          result.tags.push(tagName);
+        }
+        for (let k = 0; k < attrNames.length; k++) {
+          let attrName = attrNames[k];
+          let attrValue = attrValues[k];
+          if (!result.attributes.includes(attrName)) {
+            result.attributes.push(attrName);
+          }
+          if (!result.values[attrName]) {
+            result.values[attrName] = [];
+          }
+          if (!result.values[attrName].includes(attrValue)) {
+            result.values[attrName].push(attrValue);
+          }
+        }
+        if (!result.counts[tagName]) {
+          result.counts[tagName] = 0;
+        }
+        result.counts[tagName]++;
+      }
+      return result;
+    }
+
+    // This function will display the analysis result in a table format
+    function displayResult(result) {
+      let table = document.createElement("table");
+      let thead = document.createElement("thead");
+      let tbody = document.createElement("tbody");
+      let tr1 = document.createElement("tr");
+      let th1 = document.createElement("th");
+      let th2 = document.createElement("th");
+      let th3 = document.createElement("th");
+      th1.textContent = "Element";
+      th2.textContent = "Tag";
+      th3.textContent = "Attributes";
+      tr1.appendChild(th1);
+      tr1.appendChild(th2);
+      tr1.appendChild(th3);
+      thead.appendChild(tr1);
+      table.appendChild(thead);
+      for (let i = 0; i < result.elements.length; i++) {
+        let element = result.elements[i];
+        let tagName = element.tagName;
+        let attrNames = [];
+        let attrValues = [];
+        for (let j = 0; j < element.attributes.length; j++) {
+          let attr = element.attributes[j];
+          attrNames.push(attr.name);
+          attrValues.push(attr.value);
+        }
+        let tr2 = document.createElement("tr");
+        let td1 = document.createElement("td");
+        let td2 = document.createElement("td");
+        let td3 = document.createElement("td");
+        td1.textContent = element.outerHTML;
+        td2.textContent = tagName + " (" + result.counts[tagName] + ")";
+        td3.textContent = attrNames.join(", ") + " (" + attrValues.join(", ") + ")";
+        tr2.appendChild(td1);
+        tr2.appendChild(td2);
+        tr2.appendChild(td3);
+        tbody.appendChild(tr2);
+      }
+      table.appendChild(tbody);
+      let resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+      resultDiv.appendChild(table);
+    }
+
+    // This is the event listener that will trigger the analysis when the button is clicked
+    let analyzeButton = document.getElementById("analyze-button");
+    analyzeButton.addEventListener("click", async () => {
+      let fileInput = document.getElementById("file-input");
+      let file = fileInput.files[0];
+      if (file) {
+        try {
+          let html = await readFile(file);
+          let result = analyzeHTML(html);
+          displayResult(result);
+        } catch (error) {
+          alert(error.message);
+        }
+      } else {
+        alert("Please select a file.");
+      }
+    });
+  </script>
+</body>
+</html>
